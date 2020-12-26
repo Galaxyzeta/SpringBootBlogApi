@@ -15,10 +15,10 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface CommentDao {
 	
-	String COLUMNS_ROOTPARENT = "uid, bid, created_at, content, parent, prefer, rootparent";
+	String COLUMNS_ROOTPARENT = "uid, bid, created_at, content, parent, prefer";
 	String COLUMNS = "uid, bid, created_at, content, parent, prefer";
 
-	String VALUES_ROOTPARENT = "#{uid}, #{bid}, #{createdAt}, #{content}, #{parent}, #{prefer}, #{rootparent}";
+	String VALUES_ROOTPARENT = "#{uid}, #{bid}, #{createdAt}, #{content}, #{parent}, #{prefer}";
 	String VALUES = "#{uid}, #{bid}, #{createdAt}, #{content}, #{parent}, #{prefer}";
 
 	@Insert({
@@ -68,22 +68,32 @@ public interface CommentDao {
 	public void deleteCommentBatchByIds(List<Integer> list);
 
 	@Select({
-		"SELECT "+COLUMNS_ROOTPARENT+" FROM comment WHERE rootparent = #{rootparent}"
-	})
-	public List<Comment> getAllCommentsByRootParent(Integer rootparent);
-
-	@Select({
 		"SELECT COUNT(1) FROM comment WHERE cid = #{cid}"
 	})
 	public Integer existsByCommentId(Integer cid);
 
-	@Update({
-		"UPDATE comment SET rootparent = #{rootparent} WHERE cid = #{cid}"
-	})
-	public void setRootParentByCommentId(Integer cid, Integer rootparent);
-	
 	@Select({
 		"SELECT COUNT(1) FROM comment WHERE bid = #{bid}"
 	})
 	public Integer getCommentCountByBlogId(Integer bid);
+
+	@Select({
+		"SELECT find_children_comment_cascade(#{cid})"
+	})
+	public String getCommentIdStringByRootParentId(Integer cid);
+
+	@Select({
+		"SELECT delete_comment_cascade(#{cid})"
+	})
+	public String deleteCommentsByRootParentId(Integer cid);
+
+	@Select({
+		"<script>",
+		"SELECT * FROM comment WHERE cid IN",
+		"<foreach collection='arr' item='item' index='index' separator=',' open='(' close=')'>",
+		"#{item}",
+		"</foreach>",
+		"</script>",
+	})
+	public List<Comment> getCommentListByCommentId(String[] arr);
 }

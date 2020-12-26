@@ -67,7 +67,7 @@ public class UserService {
 	public User token2User(String token) {
 		final String mail = SecurityUtil.getMailFromToken(token);
 		return userDao.getUserByMail(mail);
-	}
+	} 
 
 	/** token 指向的用户是不是期望的用户，用于判定用户登录态 */
 	public boolean isSameUser(String token, User user) {

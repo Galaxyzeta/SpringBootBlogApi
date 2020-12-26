@@ -215,17 +215,16 @@ class ServiceTest {
 		// == 测试开始 == 
 		c1 = commentService.getByCommentId(c1.getCid());
 		assertEquals(5, commentService.getCommentCountByBlogId(newBlog.getBid()));
-		assertEquals(4, commentService.getCommentsByRootParentId(c1.getRootparent()).size());
+		assertEquals(4, commentService.getCommentsByRootParentId(c1.getCid()).size());
 		
 		commentService.adminDeleteByCommentId(c1_2.getCid());
 		assertEquals(3, commentService.getCommentCountByBlogId(newBlog.getBid()));
-		assertEquals(2, commentService.getCommentsByRootParentId(c1.getRootparent()).size());
-
+		assertEquals(2, commentService.getCommentsByRootParentId(c1.getCid()).size());
 
 		c2 = commentService.getByCommentId(c2.getCid());
 		commentService.adminDeleteByCommentId(c2.getCid());
 		assertEquals(2, commentService.getCommentCountByBlogId(newBlog.getBid()));
-		assertEquals(0, commentService.getCommentsByRootParentId(c2.getRootparent()).size());
+		assertEquals(0, commentService.getCommentsByRootParentId(c2.getCid()).size());
 
 		commentService.adminDeleteByCommentId(c1.getCid());
 		assertEquals(0, commentService.getCommentCountByBlogId(newBlog.getBid()));
@@ -277,8 +276,9 @@ class ServiceTest {
 		// 删除测试
 		blogService.deleteByBlogId(newBlog.getBid(), newBlog.getUid());
 		assertNull(blogService.getBlogById(newBlog.getBid()));
+		assertEquals(0, blogService.getTagsByBlogId(newBlog.getBid()).size());
 		// 删除不存在数据
-		assertThrows(AccessViolationException.class, ()->blogService.deleteByBlogId(123, newBlog.getUid()));
+		assertThrows(AccessViolationException.class, ()->blogService.deleteByBlogId(Integer.MAX_VALUE, newBlog.getUid()));
 	}
 
 	@Test

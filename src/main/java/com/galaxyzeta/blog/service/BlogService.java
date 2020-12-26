@@ -190,8 +190,8 @@ public class BlogService {
 		if(!dbBlog.getUid().equals(userId)) throw new AccessViolationException("无权操作");
 
 		blogDao.deleteByBlogId(blogId);
-		// 级联删除博客关联的标签
-		blog2tagDao.deleteTagByBlogId(blogId);
+		// 级联删除博客关联的标签，使用外键实现
+		// blog2tagDao.deleteTagByBlogId(blogId);
 		// 缓存清除
 		redisTemplate.delete(Constants.REDIS_BLOG_PREFIX + blogId);
 	}

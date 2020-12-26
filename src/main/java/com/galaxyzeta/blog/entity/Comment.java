@@ -10,7 +10,6 @@ public class Comment {
 	private Integer uid;
 	private Integer bid;
 	private Integer parent;
-	private Integer rootparent;
 	private Integer prefer = 0;
 
 	// Constructor
@@ -47,9 +46,6 @@ public class Comment {
 	public Integer getPrefer() {
 		return prefer;
 	}
-	public Integer getRootparent() {
-		return rootparent;
-	}
 	
 	// Setter
 	public void setContent(String content) {
@@ -75,9 +71,6 @@ public class Comment {
 	}
 	public void setPrefer(Integer prefer) {
 		this.prefer = prefer;
-	}
-	public void setRootparent(Integer rootparent) {
-		this.rootparent = rootparent;
 	}
 
 }
