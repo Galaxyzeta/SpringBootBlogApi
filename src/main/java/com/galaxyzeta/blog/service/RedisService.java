@@ -62,4 +62,10 @@ public class RedisService {
 	public final void saveBlogToRedis(Blog blog) throws JsonProcessingException {
 		redisTemplate.opsForValue().set(Constants.REDIS_BLOG_PREFIX + blog.getBid(), objectMapper.writeValueAsString(blog));
 	}
+
+	/** 从缓存中得到 Blog */
+	public final Blog getBlog(Integer blogId) throws JsonProcessingException {
+		return objectMapper.readValue(
+			redisTemplate.opsForValue().get(Constants.REDIS_BLOG_PREFIX + blogId), Blog.class);
+	}
 }

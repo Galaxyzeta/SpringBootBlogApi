@@ -4,6 +4,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
+import org.springframework.stereotype.Component;
+
 public class SecurityUtil {
 
 	public static String charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789";
@@ -46,7 +48,7 @@ public class SecurityUtil {
 	}
 
 	// 将字符串用MD5加密
-	private static String MD5(String message) {
+	public static String MD5(String message) {
 		MessageDigest md5;
 		try {
 			md5 = MessageDigest.getInstance("MD5");

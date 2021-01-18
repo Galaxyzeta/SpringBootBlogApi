@@ -8,7 +8,6 @@ import java.util.List;
 
 import com.galaxyzeta.blog.dao.BlogTagRefDao;
 import com.galaxyzeta.blog.dao.TagDao;
-import com.galaxyzeta.blog.dao.UserDao;
 import com.galaxyzeta.blog.dao.UserLikeDao;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,12 +18,11 @@ import com.galaxyzeta.blog.entity.BlogTagRef;
 import com.galaxyzeta.blog.entity.Tag;
 import com.galaxyzeta.blog.entity.UserLike;
 import com.galaxyzeta.blog.exceptions.AccessViolationException;
+import com.galaxyzeta.blog.util.BloomFilterUtil;
 import com.galaxyzeta.blog.util.Constants;
 import com.galaxyzeta.blog.util.FormatUtil;
 import com.galaxyzeta.blog.util.Pager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,9 +33,6 @@ public class BlogService {
 
 	@Autowired
 	private BlogDao blogDao;
-
-	@Autowired
-	private UserDao userDao;
 
 	@Autowired
 	private BlogTagRefDao blog2tagDao;
@@ -57,8 +52,9 @@ public class BlogService {
 	@Autowired
 	private ObjectMapper objectMapper;
 
-	private static final Logger LOG = LoggerFactory.getLogger(BlogService.class);
-	
+	@Autowired
+	private BloomFilterUtil bloomFilterUtil;
+
 	@Transactional
 	/** 保存 blog 具体信息，更新最新博客缓存 */
 	public void saveBlog(Blog blog) throws JsonProcessingException {
@@ -84,7 +80,9 @@ public class BlogService {
 		// 插入 new blog 缓存
 		// redis blog_new: (Left push -->) FRESH <---------> STALE (Right pop-->)
 		redisTemplate.opsForList().leftPush(Constants.REDIS_NEW_BLOG, Integer.toString(blog.getBid()));
-		redisTemplate.opsForValue().set(Constants.REDIS_BLOG_PREFIX + blog.getBid(), objectMapper.writeValueAsString(blog));
+		redisService.saveBlogToRedis(blog);
+		// 插入bloomFilter
+		bloomFilterUtil.save(Constants.REDIS_BLOOM_FILTER_BLOG, String.valueOf(blog.getBid()));
 		// 如果容量超过最大，移除最左端 new blog
 		if(redisTemplate.opsForList().size(Constants.REDIS_NEW_BLOG) > Constants.REDIS_NEW_BLOG_MAX_COUNT) {
 			redisTemplate.opsForList().rightPop(Constants.REDIS_NEW_BLOG);
@@ -93,9 +91,14 @@ public class BlogService {
 
 	/** 根据 id 查询 blog 详细信息，不更新缓存 */
 	public Blog getBlogById(Integer blogId) throws IOException {
+		
+		// 查询布隆过滤器
+		if(! bloomFilterUtil.exists(Constants.REDIS_BLOOM_FILTER_BLOG, String.valueOf(blogId))) {
+			return null;
+		}
+
 		if(redisTemplate.hasKey(Constants.REDIS_BLOG_PREFIX + blogId)) {
-			final String blogJson = redisTemplate.opsForValue().get(Constants.REDIS_BLOG_PREFIX + blogId);
-			return objectMapper.readValue(blogJson, Blog.class);
+			return redisService.getBlog(blogId);
 		} else {
 			Blog blog = blogDao.getByBlogId(blogId);
 			if(blog == null) return null;
@@ -156,8 +159,7 @@ public class BlogService {
 				List<Blog> res = blogDao.getHomeBlogsByParams(Constants.REDIS_NEW_BLOG_MAX_COUNT, Constants.REDIS_NEW_BLOG_MAX_COUNT - pager.getItemStart());
 				List<String> cacheList = redisTemplate.opsForList().range(Constants.REDIS_NEW_BLOG, pager.getItemStart(), Constants.REDIS_NEW_BLOG_MAX_COUNT);
 				for(String blogId: cacheList) {
-					String blogJson = redisTemplate.opsForValue().get(Constants.REDIS_BLOG_PREFIX + blogId);
-					Blog blog = objectMapper.readValue(blogJson, Blog.class);
+					Blog blog = redisService.getBlog(Integer.valueOf(blogId));
 					// 截取部分内容作为摘要
 					blog.setContent(FormatUtil.trimContent(blog.getContent(), Constants.BLOG_BODY_OVERVIEW_LIMIT));
 					res.add(blog);
@@ -168,8 +170,7 @@ public class BlogService {
 				List<Blog> res = new LinkedList<>();
 				List<String> cacheList = redisTemplate.opsForList().range(Constants.REDIS_NEW_BLOG, pager.getItemStart(), pager.getItemStart() + pager.getItemPerPage() -1);
 				for(String blogId: cacheList) {
-					String blogJson = redisTemplate.opsForValue().get(Constants.REDIS_BLOG_PREFIX + blogId);
-					Blog blog = objectMapper.readValue(blogJson, Blog.class);
+					Blog blog = redisService.getBlog(Integer.valueOf(blogId));
 					// 截取部分内容作为摘要
 					blog.setContent(FormatUtil.trimContent(blog.getContent(), Constants.BLOG_BODY_OVERVIEW_LIMIT));
 					res.add(blog);

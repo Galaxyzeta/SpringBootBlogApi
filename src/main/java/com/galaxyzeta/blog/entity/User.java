@@ -1,7 +1,5 @@
 package com.galaxyzeta.blog.entity;
 
-import javax.validation.constraints.NotBlank;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import org.springframework.data.annotation.Transient;

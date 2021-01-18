@@ -39,6 +39,8 @@ public class Constants {
 	public static final String MAIL_PREFIX = "MAIL_";
 	/** redis IP访问限制前缀 */
 	public static final String IP_PREFIX = "IP_";
+	/** redis 博客布隆过滤器 */
+	public static final String REDIS_BLOOM_FILTER_BLOG = "blog_bloom_filter";
 	
 	// === RABBIT MQ ===
 	
